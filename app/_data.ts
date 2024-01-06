@@ -1,6 +1,15 @@
 /* eslint-disable */
 
-export const _data = [{
+export type Employee = {
+    name: string;
+    age: number;
+    job: string;
+    join_at: string;
+    fulltime: boolean;
+    country: string;
+};
+
+export const _data : Employee[] = [{
     "name": "Warden Duggen",
     "age": 52,
     "job": "Senior Editor",

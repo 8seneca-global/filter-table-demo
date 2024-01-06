@@ -13,6 +13,8 @@
     "ag-grid-enterprise": "^31.0.1",
     "ag-grid-react": "^31.0.1",
     "next": "14.0.4",
+    "primeicons": "^6.0.1",
+    "primereact": "^10.2.1",
     "react": "^18",
     "react-dom": "^18"
   },
