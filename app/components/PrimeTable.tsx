@@ -26,8 +26,10 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
 
     const [ filters, setFilters ] = useState<DataTableFilterMeta>( {
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        name: { value: null, matchMode: FilterMatchMode.CONTAINS },
         job: { value: null, matchMode: FilterMatchMode.IN },
         age: { value: null, matchMode: FilterMatchMode.EQUALS },
+        country: { value: null, matchMode: FilterMatchMode.CONTAINS },
         join_at: { value: null, matchMode: FilterMatchMode.DATE_IS },
     } );
     const [ globalFilterValue, setGlobalFilterValue ] = useState<string>( '' );
