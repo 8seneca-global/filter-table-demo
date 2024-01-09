@@ -63,7 +63,7 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
             dateFormat="dd/mm/yy" placeholder="dd/mm/yyyy" mask="99/99/9999" />;
     };
 
-    const formatDate = ( value: Date ) => {
+    const formatDate = ( value: Date ) : string => {
         return value.toLocaleDateString( 'en-US', {
             day: '2-digit',
             month: 'short',
@@ -71,8 +71,12 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
         } );
     };
 
-    const dateBodyTemplate = ( rowData: any ) => {
-        return formatDate( rowData.join_at );
+    const dateBodyTemplate = ( rowData: any ) : React.ReactElement => {
+        return <span>
+            {
+                formatDate( rowData.join_at )
+            }
+        </span>;
     };
 
     type Column = {
