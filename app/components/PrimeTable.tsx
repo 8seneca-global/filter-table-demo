@@ -8,11 +8,12 @@ import 'primereact/resources/themes/lara-light-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
 import { Employee } from '@/app/_data';
 import { Button } from 'primereact/button';
+import { ColumnType, ColumnBaseType, useColumnProfile } from '@/app/hooks/useColumnProfile';
 
 const PrimeTable = ( { data } : { data: Employee[] } ) => {
     const getDate = ( date: string ) => {
@@ -46,7 +47,7 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
         setGlobalFilterValue( value );
     };
 
-    const jobRowFilterTemplate = ( options: ColumnFilterElementTemplateOptions ) => {
+    const jobRowFilterTemplate = useCallback( ( options: ColumnFilterElementTemplateOptions ) => {
         return (
             <MultiSelect
                 value={options.value}
@@ -58,7 +59,7 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
                 style={{ minWidth: '14rem' }}
             />
         );
-    };
+    }, [ _data ] );
 
     const dateFilterTemplate = ( options: ColumnFilterElementTemplateOptions ) => {
         return <Calendar value={options.value}
@@ -74,52 +75,62 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
         } );
     };
 
-    const dateBodyTemplate = ( rowData: any ) : React.ReactElement => {
+    const dateBodyTemplate = useCallback( ( rowData: any ) : React.ReactElement => {
         return <span>
             {
                 formatDate( rowData.join_at )
             }
         </span>;
-    };
+    }, [] );
 
-    type Column = {
-        field: string;
-        header: string;
-        filterPlaceholder: string;
-        sortable: boolean;
-        filter: boolean;
-        hide: boolean;
-        showFilterMenu?: boolean;
-        filterElement?: ( options: ColumnFilterElementTemplateOptions ) => React.ReactElement;
-        dataType?: string;
-        body?: ( rowData: any ) => React.ReactElement;
-    }
-    const [ columns, setColumns ] = useState<Column[]>( [
-        { field: 'name', header: 'name', filterPlaceholder: 'Search by name', sortable: true, filter: true, hide: false, },
-        { field: 'age', header: 'age', filterPlaceholder: 'Search by age', sortable: true, filter: true, hide: false, },
+    const { columnSettings, saveColumnSettings } = useColumnProfile( [
+        { field: 'name', hide: false },
+        { field: 'age', hide: false },
+        { field: 'job', hide: false },
+        { field: 'country', hide: false },
+        { field: 'join_at', hide: false },
+    ] );
+    const columns = useMemo<ColumnType[]>( () => [
+        { field: 'name', header: 'name', filterPlaceholder: 'Search by name', sortable: true, filter: true, },
+        { field: 'age', header: 'age', filterPlaceholder: 'Search by age', sortable: true, filter: true, },
         {
-            field: 'job', header: 'job', filterPlaceholder: 'Search by job', sortable: true, filter: true, hide: false,
+            field: 'job', header: 'job', filterPlaceholder: 'Search by job', sortable: true, filter: true,
             showFilterMenu: false, filterElement: jobRowFilterTemplate,
         },
-        { field: 'country', header: 'country', filterPlaceholder: 'Search by country', sortable: true, filter: true, hide: false, },
+        { field: 'country', header: 'country', filterPlaceholder: 'Search by country', sortable: true, filter: true, },
         {
-            field: 'join_at', header: 'join_at', filterPlaceholder: 'Search by join', sortable: true, filter: true, hide: false,
+            field: 'join_at', header: 'join_at', filterPlaceholder: 'Search by join', sortable: true, filter: true,
             dataType: 'date', body: dateBodyTemplate, filterElement: dateFilterTemplate,
         },
-    ] );
+    ], [ dateBodyTemplate, jobRowFilterTemplate ] );
 
     const toggleColumns = ( column: string ) => {
-        const newColumns = columns.map( item => {
+        const newColumns: ColumnBaseType[] = columnSettings.map( item => {
             if ( item.field === column ) {
                 return { ...item, hide: !item.hide };
             }
             return item;
         } );
-        setColumns( newColumns );
+        saveColumnSettings( newColumns );
+    };
+
+    // @ts-ignore
+    const onColReorder = ( e ) => {
+        const newColumns: ColumnBaseType[] = e.columns.map( ( column: { props: { field: string; }; } ) => {
+            const { field } = column.props;
+            return columnSettings.find( ( item: { field: string; } ) => item.field === field );
+        } );
+        // add hidden columns
+        if ( newColumns.length < columnSettings.length ) {
+            const hiddenColumns = columnSettings.filter( item => item.hide );
+            newColumns.push( ...hiddenColumns );
+        }
+        saveColumnSettings( newColumns );
     };
 
     const dt = useRef( null );
     const exportCSV = () => {
+        // @ts-ignore
         dt.current?.exportCSV( { selectionOnly: false } );
     };
 
@@ -134,7 +145,7 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
                 </div>
                 <div className={'flex items-center gap-4 col-span-2'}>
                     {
-                        columns
+                        columnSettings
                             .map( item => <label key={item.field}>
                                 <input type="checkbox" checked={!item.hide} onChange={() => toggleColumns( item.field )} className={'mr-1'} />
                                 <span>{item.field}</span>
@@ -162,12 +173,16 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
                 filters={filters}
                 paginator rows={10} rowsPerPageOptions={[ 10, 25, 50 ]}
                 filterDisplay="row" globalFilterFields={[ 'name', 'age', 'job', 'country' ]} emptyMessage="No customers found."
-                resizableColumns reorderableColumns
+                resizableColumns reorderableColumns onColReorder={onColReorder}
             >
                 {
-                    columns
+                    columnSettings
                         .filter( item => !item.hide )
-                        .map( item => <Column key={item.field} {...item} /> )
+                        .map( item => {
+                            const column = columns.find( column => column.field === item.field );
+                            if ( !column ) return null;
+                            return <Column key={item.field} {...column} />;
+                        } )
                 }
             </DataTable>
         </PrimeReactProvider>

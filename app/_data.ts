@@ -1,13 +1,17 @@
 /* eslint-disable */
 
-export type Employee = {
+export interface Employee {
     name: string;
     age: number;
     job: string;
     join_at: string;
     fulltime: boolean;
     country: string;
-};
+}
+
+export interface EmployeeData extends Omit<Employee, 'join_at'> {
+    join_at: Date;
+}
 
 export const _data : Employee[] = [{
     "name": "Warden Duggen",
