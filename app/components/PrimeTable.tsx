@@ -8,10 +8,11 @@ import 'primereact/resources/themes/lara-light-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
 import { Employee } from '@/app/_data';
+import { Button } from 'primereact/button';
 
 const PrimeTable = ( { data } : { data: Employee[] } ) => {
     const getDate = ( date: string ) => {
@@ -117,16 +118,21 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
         setColumns( newColumns );
     };
 
+    const dt = useRef( null );
+    const exportCSV = () => {
+        dt.current?.exportCSV( { selectionOnly: false } );
+    };
+
     const renderHeader = () => {
         return (
-            <div className="w-full grid grid-cols-3 mb-4 gap-4">
-                <div className="flex items-center col-span-2">
+            <div className="w-full grid grid-cols-6 mb-4 gap-4">
+                <div className="flex items-center col-span-3">
                     <div className="p-input-icon-left w-full">
                         <i className="pi pi-search" />
                         <InputText value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" className={'w-full'} />
                     </div>
                 </div>
-                <div className={'flex items-center gap-4'}>
+                <div className={'flex items-center gap-4 col-span-2'}>
                     {
                         columns
                             .map( item => <label key={item.field}>
@@ -134,6 +140,11 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
                                 <span>{item.field}</span>
                             </label> )
                     }
+                </div>
+                <div>
+                    <Button type="button" rounded onClick={() => exportCSV()} data-pr-tooltip="CSV">
+                        Download CSV
+                    </Button>
                 </div>
             </div>
         );
@@ -144,6 +155,7 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
     return (
         <PrimeReactProvider>
             <DataTable value={_data}
+                ref={dt}
                 tableStyle={{ minWidth: '50rem' }}
                 removableSort
                 header={header}
