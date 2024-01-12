@@ -1,30 +1,22 @@
 'use client';
 
 import { FilterMatchMode, PrimeReactProvider } from 'primereact/api';
-import { DataTable, DataTableFilterMeta } from 'primereact/datatable';
+import { DataTable, DataTableFilterMeta, DataTableStateEvent } from 'primereact/datatable';
 import { Column, ColumnFilterElementTemplateOptions } from 'primereact/column';
 import { MultiSelect } from 'primereact/multiselect';
 import 'primereact/resources/themes/lara-light-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
 import { Employee } from '@/app/_data';
 import { Button } from 'primereact/button';
 import { ColumnType, ColumnBaseType, useColumnProfile } from '@/app/hooks/useColumnProfile';
 
-const PrimeTable = ( { data } : { data: Employee[] } ) => {
-    const getDate = ( date: string ) => {
-        const dateParts = date.split( '/' );
-        const day = dateParts[0];
-        const month = dateParts[1];
-        const year = dateParts[2];
-        return new Date( `${year}-${month}-${day}` );
-    };
-
-    const _data = useMemo( () => data.map( item => ( { ...item, join_at: getDate( item.join_at ) } ) ), [ data ] );
+const PrimeTable = () => {
+    const [ employees, setEmployees ] = useState<Employee[]>( [] );
 
     const [ filters, setFilters ] = useState<DataTableFilterMeta>( {
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -51,7 +43,7 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
         return (
             <MultiSelect
                 value={options.value}
-                options={_data.map( ( item: { job: string; } ) => item.job )}
+                options={employees.map( ( item: { job: string; } ) => item.job )}
                 onChange={( e ) => options.filterApplyCallback( e.value )}
                 placeholder="Any"
                 className="p-column-filter"
@@ -59,7 +51,7 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
                 style={{ minWidth: '14rem' }}
             />
         );
-    }, [ _data ] );
+    }, [ employees ] );
 
     const dateFilterTemplate = ( options: ColumnFilterElementTemplateOptions ) => {
         return <Calendar value={options.value}
@@ -163,17 +155,76 @@ const PrimeTable = ( { data } : { data: Employee[] } ) => {
 
     const header = renderHeader();
 
+    const [ totalRecords, setTotalRecords ] = useState( 0 );
+    const [ lazyState, setLazyState ] = useState( {
+        first: 0,
+        rows: 10,
+        page: 0,
+        sortField: '',
+        sortOrder: null,
+        filters,
+    } );
+
+    const onPage = ( event: DataTableStateEvent ) => {
+        // @ts-ignore
+        setLazyState( event );
+    };
+
+    const onSort = ( event: DataTableStateEvent ) => {
+        // @ts-ignore
+        setLazyState( event );
+    };
+
+    const onFilter = ( event: DataTableStateEvent ) => {
+        event['first'] = 0;
+        // @ts-ignore
+        setLazyState( event );
+    };
+
+    const loadLazyData = async ( lazyState: DataTableStateEvent ) => {
+        const getDate = ( date: string ) => {
+            const dateParts = date.split( '/' );
+            const day = dateParts[0];
+            const month = dateParts[1];
+            const year = dateParts[2];
+            return new Date( `${year}-${month}-${day}` );
+        };
+
+        try {
+            const res = await fetch( '/api/employees', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify( lazyState ),
+            } );
+            const data = await res.json();
+            setEmployees( data.data.map( ( item: Employee ) => ( { ...item, join_at: getDate( item.join_at ) } ) ) );
+            setTotalRecords( data.total );
+        } catch ( e ) {
+            console.log( e );
+        }
+    };
+
+    useEffect( () => {
+        // @ts-ignore
+        loadLazyData( lazyState ).then( () => {} );
+    }, [ lazyState ] );
+
     return (
         <PrimeReactProvider>
-            <DataTable value={_data}
+            <DataTable value={employees}
                 ref={dt}
                 tableStyle={{ minWidth: '50rem' }}
                 removableSort
                 header={header}
                 filters={filters}
-                paginator rows={10} rowsPerPageOptions={[ 10, 25, 50 ]}
-                filterDisplay="row" globalFilterFields={[ 'name', 'age', 'job', 'country' ]} emptyMessage="No customers found."
+                paginator rows={lazyState.rows} rowsPerPageOptions={[ 10, 25, 50 ]}
+                filterDisplay="row" globalFilterFields={[ 'name', 'age', 'job', 'country' ]} emptyMessage="No employees found."
                 resizableColumns reorderableColumns onColReorder={onColReorder}
+                lazy first={lazyState.first} onPage={onPage} totalRecords={totalRecords}
+                onSort={onSort} sortField={lazyState.sortField} sortOrder={lazyState.sortOrder}
+                onFilter={onFilter}
             >
                 {
                     columnSettings
