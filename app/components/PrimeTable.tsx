@@ -126,6 +126,30 @@ const PrimeTable = () => {
         dt.current?.exportCSV( { selectionOnly: false } );
     };
 
+    const onResizeEnd = () => {
+        // @ts-ignore
+        const table : HTMLElement = dt.current?.getTable() as HTMLElement;
+
+        // get column width ratio
+        const columns = table.querySelectorAll( 'thead tr:first-child > th' );
+        const columnsWidth = Array.from( columns ).map( column => column.clientWidth );
+        const totalWidth = columnsWidth.reduce( ( acc, cur ) => acc + cur, 0 );
+        const ratio = columnsWidth.map( width => Math.floor( ( width / totalWidth ) * 100 ) );
+
+        const newSettings = columnSettings
+            .map( ( item, index ) => {
+                if ( item.hide ) return item;
+                return {
+                    ...item,
+                    passThrough: {
+                        ...( item.passThrough || {} ),
+                        style: { width: `${ratio[index]}%` }
+                    }
+                };
+            } );
+        saveColumnSettings( newSettings );
+    };
+
     const renderHeader = () => {
         return (
             <div className="w-full grid grid-cols-6 mb-4 gap-4">
@@ -224,15 +248,15 @@ const PrimeTable = () => {
                 resizableColumns reorderableColumns onColReorder={onColReorder}
                 lazy first={lazyState.first} onPage={onPage} totalRecords={totalRecords}
                 onSort={onSort} sortField={lazyState.sortField} sortOrder={lazyState.sortOrder}
-                onFilter={onFilter}
+                onFilter={onFilter} onColumnResizeEnd={onResizeEnd}
             >
                 {
                     columnSettings
                         .filter( item => !item.hide )
-                        .map( item => {
-                            const column = columns.find( column => column.field === item.field );
+                        .map( setting => {
+                            const column = columns.find( column => column.field === setting.field );
                             if ( !column ) return null;
-                            return <Column key={item.field} {...column} />;
+                            return <Column key={setting.field} {...column} {...( setting.passThrough || {} )} />;
                         } )
                 }
             </DataTable>

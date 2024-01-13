@@ -4,6 +4,7 @@ import { ColumnFilterElementTemplateOptions } from 'primereact/column';
 export interface ColumnBaseType {
     field: string,
     hide?: boolean,
+    passThrough?: Object,
 }
 
 export interface ColumnType extends ColumnBaseType {
