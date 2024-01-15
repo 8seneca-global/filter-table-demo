@@ -27,6 +27,7 @@ const PrimeTable = () => {
         join_at: { value: null, matchMode: FilterMatchMode.DATE_IS },
     } );
     const [ globalFilterValue, setGlobalFilterValue ] = useState<string>( '' );
+    const [ enableFilter, setEnableFilter ] = useState<boolean>( false );
 
     const onGlobalFilterChange = ( e: React.ChangeEvent<HTMLInputElement> ) => {
         const value = e.target.value;
@@ -75,26 +76,40 @@ const PrimeTable = () => {
         </span>;
     }, [] );
 
+    const filterToggleBtn = useCallback( ( name: string ) => {
+        return <span onClick={( e ) => {
+            e.preventDefault();
+            setEnableFilter( prev => !prev );
+        }}>
+            { name }
+            <i className="pi pi-filter-fill text-[.5rem] pl-2"></i>
+        </span>;
+    }, [] );
     const { columnSettings, saveColumnSettings } = useColumnProfile( [
         { field: 'name', hide: false },
         { field: 'age', hide: false },
         { field: 'job', hide: false },
         { field: 'country', hide: false },
         { field: 'join_at', hide: false },
+        { field: '_id', hide: false, passThrough: { style:  { width: '120px' } } },
     ] );
     const columns = useMemo<ColumnType[]>( () => [
-        { field: 'name', header: 'name', filterPlaceholder: 'Search by name', sortable: true, filter: true, },
-        { field: 'age', header: 'age', filterPlaceholder: 'Search by age', sortable: true, filter: true, },
+        { field: 'name', header: filterToggleBtn( 'name' ), filterPlaceholder: 'Search by name', sortable: true, filter: true, },
+        { field: 'age', header: filterToggleBtn( 'age' ), filterPlaceholder: 'Search by age', sortable: true, filter: true, },
         {
-            field: 'job', header: 'job', filterPlaceholder: 'Search by job', sortable: true, filter: true,
+            field: 'job', header: filterToggleBtn( 'job' ), filterPlaceholder: 'Search by job', sortable: true, filter: true,
             showFilterMenu: false, filterElement: jobRowFilterTemplate,
         },
-        { field: 'country', header: 'country', filterPlaceholder: 'Search by country', sortable: true, filter: true, },
+        { field: 'country', header: filterToggleBtn( 'country' ), filterPlaceholder: 'Search by country', sortable: true, filter: true, },
         {
-            field: 'join_at', header: 'join_at', filterPlaceholder: 'Search by join', sortable: true, filter: true,
+            field: 'join_at', header: filterToggleBtn( 'join_at' ), filterPlaceholder: 'Search by join', sortable: true, filter: true,
             dataType: 'date', body: dateBodyTemplate, filterElement: dateFilterTemplate,
         },
-    ], [ dateBodyTemplate, jobRowFilterTemplate ] );
+        {
+            field: '_id', header: <span>Setting <i className="pi pi-cog text-[.8rem]"></i></span>, filterPlaceholder: '',
+            sortable: false, filter: false, resizeable: false, reorderable: false
+        },
+    ], [ dateBodyTemplate, filterToggleBtn, jobRowFilterTemplate ] );
 
     const toggleColumns = ( column: string ) => {
         const newColumns: ColumnBaseType[] = columnSettings.map( item => {
@@ -241,14 +256,19 @@ const PrimeTable = () => {
                 ref={dt}
                 tableStyle={{ minWidth: '50rem' }}
                 removableSort
-                header={header}
+                // header={header}
                 filters={filters}
                 paginator rows={lazyState.rows} rowsPerPageOptions={[ 10, 25, 50 ]}
-                filterDisplay="row" globalFilterFields={[ 'name', 'age', 'job', 'country' ]} emptyMessage="No employees found."
+                filterDisplay={enableFilter ? 'row' : undefined} globalFilterFields={[ 'name', 'age', 'job', 'country' ]} emptyMessage="No employees found."
                 resizableColumns reorderableColumns onColReorder={onColReorder}
                 lazy first={lazyState.first} onPage={onPage} totalRecords={totalRecords}
                 onSort={onSort} sortField={lazyState.sortField} sortOrder={lazyState.sortOrder}
                 onFilter={onFilter} onColumnResizeEnd={onResizeEnd}
+                sortIcon={( { sortOrder, sorted } ) => {
+                    if ( !sorted ) return <i className="pi pi-arrow-up text-[.5rem] pl-2"></i>;
+                    if ( sortOrder && sortOrder > 0 ) return <i className="pi pi-arrow-up text-[.7rem] pl-2"></i>;
+                    return <i className="pi pi-arrow-down text-[.7rem] pl-2"></i>;
+                }}
             >
                 {
                     columnSettings

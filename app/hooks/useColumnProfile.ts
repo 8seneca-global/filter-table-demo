@@ -8,8 +8,8 @@ export interface ColumnBaseType {
 }
 
 export interface ColumnType extends ColumnBaseType {
-    header: string;
-    filterPlaceholder: string;
+    header: string | ReactElement;
+    filterPlaceholder?: string;
     sortable: boolean;
     filter: boolean;
     hide?: boolean;
