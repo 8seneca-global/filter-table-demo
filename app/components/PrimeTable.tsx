@@ -93,6 +93,37 @@ const PrimeTable = () => {
         { field: 'join_at', hide: false },
         { field: '_id', hide: false, passThrough: { style:  { width: '120px' } } },
     ] );
+
+    const toggleColumns = useCallback( ( column: string ) => {
+        const newColumns: ColumnBaseType[] = columnSettings.map( item => {
+            if ( item.field === column ) {
+                return { ...item, hide: !item.hide };
+            }
+            return item;
+        } );
+        saveColumnSettings( newColumns );
+    }, [ columnSettings, saveColumnSettings ] );
+
+    const SettingBlock = useCallback( () => {
+        return <div>
+            <label htmlFor="toggleOption">
+                <input type="checkbox" id={'toggleOption'} className={'hidden'} />
+                <span className={'cursor-pointer'}>Setting <i className="pi pi-cog text-[.8rem]"></i></span>
+            </label>
+            <div className={'optionMenu absolute bg-white p-4 rounded right-[1.8rem] top-[2.5rem] drop-shadow hidden'}>
+                <div className={'flex flex-col gap-4 col-span-2'}>
+                    {
+                        columnSettings
+                            .filter( item => item.field !== '_id' )
+                            .map( item => <label key={item.field}>
+                                <input type="checkbox" checked={!item.hide} onChange={() => toggleColumns( item.field )} className={'mr-1'} />
+                                <span>{item.field}</span>
+                            </label> )
+                    }
+                </div>
+            </div>
+        </div>;
+    }, [ columnSettings, toggleColumns ] );
     const columns = useMemo<ColumnType[]>( () => [
         { field: 'name', header: filterToggleBtn( 'name' ), filterPlaceholder: 'Search by name', sortable: true, filter: true, },
         { field: 'age', header: filterToggleBtn( 'age' ), filterPlaceholder: 'Search by age', sortable: true, filter: true, },
@@ -106,20 +137,10 @@ const PrimeTable = () => {
             dataType: 'date', body: dateBodyTemplate, filterElement: dateFilterTemplate,
         },
         {
-            field: '_id', header: <span>Setting <i className="pi pi-cog text-[.8rem]"></i></span>, filterPlaceholder: '',
+            field: '_id', header: <SettingBlock />, filterPlaceholder: '',
             sortable: false, filter: false, resizeable: false, reorderable: false
         },
-    ], [ dateBodyTemplate, filterToggleBtn, jobRowFilterTemplate ] );
-
-    const toggleColumns = ( column: string ) => {
-        const newColumns: ColumnBaseType[] = columnSettings.map( item => {
-            if ( item.field === column ) {
-                return { ...item, hide: !item.hide };
-            }
-            return item;
-        } );
-        saveColumnSettings( newColumns );
-    };
+    ], [ dateBodyTemplate, filterToggleBtn, jobRowFilterTemplate, SettingBlock ] );
 
     // @ts-ignore
     const onColReorder = ( e ) => {

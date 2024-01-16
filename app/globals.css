@@ -28,3 +28,14 @@
 .p-datatable-tbody tr td:last-child {
   border-radius: 0 16px 16px 0;
 }
+
+[for="toggleOption"] {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+[for="toggleOption"]:has(input:checked) ~ .optionMenu {
+  display: block;
+}
